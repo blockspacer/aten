@@ -17,8 +17,8 @@
 #define ENABLE_ENVMAP
 //#define ENABLE_NLM
 
-static int WIDTH = 640;
-static int HEIGHT = 360;
+static int WIDTH = 1280;
+static int HEIGHT = 720;
 static const char* TITLE = "svgf";
 
 #ifdef ENABLE_OMP
@@ -126,7 +126,7 @@ void onRun()
 			g_tracer.reset();
 		}
 
-		static const char* items[] = { "SVGF", "TF", "PT", "VAR", "AOV" };
+		static const char* items[] = { "SVGF", "TF", "PT", "VAR", "Atrous", "AOV" };
 		int item_current = g_curMode;
 		ImGui::Combo("mode", &item_current, items, AT_COUNTOF(items));
 

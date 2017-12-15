@@ -277,7 +277,8 @@ namespace idaten
 			Resolution::Low,
 			outputSurf, width / 2, height / 2, maxSamples);
 
-		if (m_mode == Mode::SVGF)
+		if (m_mode == Mode::SVGF
+			|| m_mode == Mode::ATrous)
 		{
 			onVarianceEstimation(
 				Resolution::Hi,
@@ -293,7 +294,9 @@ namespace idaten
 				Resolution::Low,
 				outputSurf, width / 2, height / 2);
 
-			upsamplingAndMerge(outputSurf, width, height);
+			if (m_mode == Mode::SVGF) {
+				upsamplingAndMerge(outputSurf, width, height);
+			}
 		}
 		else if (m_mode == Mode::VAR) {
 			onVarianceEstimation(

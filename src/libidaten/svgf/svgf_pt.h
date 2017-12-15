@@ -14,7 +14,8 @@ namespace idaten
 			SVGF,			// Spatio-temporal Variance Guided Filter.
 			TF,				// Temporal Filter.
 			PT,				// Path Tracing.
-			VAR,			// Variance (For debug).
+			VAR,			// Variance Estimation.
+			ATrous,			// A-Trous Wavelet.
 			AOVar,			// Arbitrary Output Variables.
 		};
 
