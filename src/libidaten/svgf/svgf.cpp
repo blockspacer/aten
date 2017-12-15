@@ -296,10 +296,13 @@ namespace idaten
 			upsamplingAndMerge(outputSurf, width, height);
 		}
 		else if (m_mode == Mode::VAR) {
-			// TODO
 			onVarianceEstimation(
 				Resolution::Hi,
 				outputSurf, width, height);
+
+			onVarianceEstimation(
+				Resolution::Low,
+				outputSurf, width / 2, height / 2);
 		}
 
 		pick(
