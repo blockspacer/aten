@@ -269,7 +269,7 @@ namespace idaten
 	protected:
 		idaten::TypedCudaMemory<Path> m_paths[Resolution::Num];
 		idaten::TypedCudaMemory<aten::Intersection> m_isects;
-		idaten::TypedCudaMemory<aten::ray> m_rays;
+		idaten::TypedCudaMemory<aten::ray> m_rays[Resolution::Num];
 
 		idaten::TypedCudaMemory<int> m_hitbools;
 		idaten::TypedCudaMemory<int> m_hitidx;

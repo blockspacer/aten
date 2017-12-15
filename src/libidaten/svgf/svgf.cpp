@@ -99,8 +99,10 @@ namespace idaten
 		m_paths[Resolution::Hi].init(width * height);
 		m_paths[Resolution::Low].init((width / 2) * (height / 2));
 
+		m_rays[Resolution::Hi].init(width * height);
+		m_rays[Resolution::Low].init((width / 2) * (height / 2));
+
 		m_isects.init(width * height);
-		m_rays.init(width * height);
 
 		m_shadowRays.init(width * height);
 

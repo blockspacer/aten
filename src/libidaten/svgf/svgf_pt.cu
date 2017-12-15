@@ -891,7 +891,7 @@ namespace idaten
 		if (m_mode == Mode::AOVar) {
 			genPath<true> << <grid, block >> > (
 				m_paths[Resolution::Hi].ptr(),
-				m_rays.ptr(),
+				m_rays[Resolution::Hi].ptr(),
 				width, height,
 				sample, maxSamples,
 				m_frame,
@@ -902,7 +902,7 @@ namespace idaten
 		else {
 			genPath<false> << <grid, block >> > (
 				m_paths[Resolution::Hi].ptr(),
-				m_rays.ptr(),
+				m_rays[Resolution::Hi].ptr(),
 				width, height,
 				sample, maxSamples,
 				m_frame,
@@ -937,7 +937,7 @@ namespace idaten
 				//hitTest << <1, 1 >> > (
 				m_paths[resType].ptr(),
 				m_isects.ptr(),
-				m_rays.ptr(),
+				m_rays[resType].ptr(),
 				m_hitbools.ptr(),
 				width, height,
 				m_shapeparam.ptr(), m_shapeparam.num(),
@@ -976,7 +976,7 @@ namespace idaten
 					m_tex.ptr(),
 					m_envmapRsc.idx, m_envmapRsc.avgIllum, m_envmapRsc.multiplyer,
 					m_paths[resType].ptr(),
-					m_rays.ptr(),
+					m_rays[resType].ptr(),
 					width, height);
 			}
 			else {
@@ -988,7 +988,7 @@ namespace idaten
 					m_tex.ptr(),
 					m_envmapRsc.idx, m_envmapRsc.avgIllum, m_envmapRsc.multiplyer,
 					m_paths[resType].ptr(),
-					m_rays.ptr(),
+					m_rays[resType].ptr(),
 					width, height);
 			}
 		}
@@ -1066,7 +1066,7 @@ namespace idaten
 				m_paths[resType].ptr(),
 				m_hitidx.ptr(), hitcount,
 				m_isects.ptr(),
-				m_rays.ptr(),
+				m_rays[resType].ptr(),
 				m_frame,
 				bounce, rrBounce,
 				m_shapeparam.ptr(), m_shapeparam.num(),
@@ -1091,7 +1091,7 @@ namespace idaten
 				m_paths[resType].ptr(),
 				m_hitidx.ptr(), hitcount,
 				m_isects.ptr(),
-				m_rays.ptr(),
+				m_rays[resType].ptr(),
 				m_frame,
 				bounce, rrBounce,
 				m_shapeparam.ptr(), m_shapeparam.num(),

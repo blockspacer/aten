@@ -32,9 +32,11 @@ __global__ void checkIfSingular(
 
 __global__ void coarseBuffers(
 	const idaten::SVGFPathTracing::Path* __restrict__ srcPaths,
+	const aten::ray* __restrict__ srcRays,
 	const float4* __restrict__ srcAovNormalDepth,
 	const float4* __restrict__ srcAovMomentMeshid,
 	idaten::SVGFPathTracing::Path* dstPaths,
+	aten::ray* dstRays,
 	float4* dstAovNormalDepth,
 	float4* dstAovMomentMeshid,
 	int width, int height,
@@ -67,11 +69,8 @@ __global__ void coarseBuffers(
 		srcAovNormalDepth[idx_2],
 		srcAovNormalDepth[idx_3],
 	};
-	float4 momentMeshid[4] = {
-		srcAovMomentMeshid[idx_0],
-		srcAovMomentMeshid[idx_1],
-		srcAovMomentMeshid[idx_2],
-		srcAovMomentMeshid[idx_3],
+	int indices[4] = {
+		idx_0, idx_1, idx_2, idx_3,
 	};
 
 	// Depth‚ªˆê”Ô‘å‚«‚¢‚à‚Ì‚ð‘I‚Ô.
@@ -79,7 +78,7 @@ __global__ void coarseBuffers(
 	int pos = -1;
 
 #pragma unroll
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 4; i++) {
 		if (nmlDepth[i].w > maxDepth
 			&& !paths[i].isSingular
 			&& !paths[i].isKill
@@ -95,7 +94,11 @@ __global__ void coarseBuffers(
 	if (pos >= 0) {
 		dstPaths[idx] = paths[pos];
 		dstAovNormalDepth[idx] = nmlDepth[pos];
-		dstAovMomentMeshid[idx] = momentMeshid[pos];
+
+		int srcIdx = indices[pos];
+
+		dstRays[idx] = srcRays[srcIdx];
+		dstAovMomentMeshid[idx] = srcAovMomentMeshid[srcIdx];
 	}
 	else {
 		dstPaths[idx].isKill = true;
@@ -235,7 +238,9 @@ __global__ void onUpsamplingAndMerge(
 
 	// Merge.
 	float4 hiResColor = inHiResColor[hiResIdx];
-	hiResColor = sum;
+	//hiResColor = sum;
+
+	hiResColor += inLowResColor[getIdx(lx, ly, lowResWidth)];
 
 	// Multiply Albedo.
 	hiResColor *= aovTexclrTemporalWeight[hiResIdx];
@@ -263,9 +268,11 @@ namespace idaten
 
 		coarseBuffers << <grid, block >> > (
 			m_paths[Resolution::Hi].ptr(),
+			m_rays[Resolution::Hi].ptr(),
 			m_aovNormalDepth[Resolution::Hi][curaov].ptr(),
 			m_aovMomentMeshid[Resolution::Hi][curaov].ptr(),
 			m_paths[Resolution::Low].ptr(),
+			m_rays[Resolution::Low].ptr(),
 			m_aovNormalDepth[Resolution::Low][curaov].ptr(),
 			m_aovMomentMeshid[Resolution::Low][curaov].ptr(),
 			width, height,
