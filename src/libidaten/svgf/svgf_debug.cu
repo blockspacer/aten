@@ -138,8 +138,8 @@ namespace idaten
 			outputSurf,
 			m_aovMode,
 			width, height,
-			m_aovNormalDepth[curaov].ptr(),
-			m_aovTexclrTemporalWeight[curaov].ptr(),
+			m_aovNormalDepth[Resolution::Hi][curaov].ptr(),
+			m_aovTexclrTemporalWeight[Resolution::Hi][curaov].ptr(),
 			m_isects.ptr());
 	}
 
@@ -158,9 +158,9 @@ namespace idaten
 				m_pickedInfo.ix, m_pickedInfo.iy,
 				width, height,
 				m_cam.ptr(),
-				m_paths.ptr(),
-				m_aovNormalDepth[curaov].ptr(),
-				m_aovMomentMeshid[curaov].ptr(),
+				m_paths[Resolution::Hi].ptr(),
+				m_aovNormalDepth[Resolution::Hi][curaov].ptr(),
+				m_aovMomentMeshid[Resolution::Hi][curaov].ptr(),
 				m_shapeparam.ptr(), m_shapeparam.num(),
 				m_nodetex.ptr(),
 				m_primparams.ptr(),

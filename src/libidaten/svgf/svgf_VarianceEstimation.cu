@@ -259,6 +259,7 @@ __global__ void varianceEstimation(
 namespace idaten
 {
 	void SVGFPathTracing::onVarianceEstimation(
+		Resolution resType,
 		cudaSurfaceObject_t outputSurf,
 		int width, int height)
 	{
@@ -272,10 +273,10 @@ namespace idaten
 		varianceEstimation << <grid, block >> > (
 		//varianceEstimation << <1, 1 >> > (
 			outputSurf,
-			m_aovNormalDepth[curaov].ptr(),
-			m_aovTexclrTemporalWeight[curaov].ptr(),
-			m_aovColorVariance[curaov].ptr(),
-			m_aovMomentMeshid[curaov].ptr(),
+			m_aovNormalDepth[resType][curaov].ptr(),
+			m_aovTexclrTemporalWeight[resType][curaov].ptr(),
+			m_aovColorVariance[resType][curaov].ptr(),
+			m_aovMomentMeshid[resType][curaov].ptr(),
 			m_mtxC2V,
 			width, height);
 

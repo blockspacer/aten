@@ -311,6 +311,9 @@
     <ClCompile Include="..\src\libidaten\kernel\renderer.cpp">
       <Filter>kernel\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\libidaten\svgf\svgf.cpp">
+      <Filter>svgf</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\src\libidaten\kernel\light.cu">
@@ -396,6 +399,9 @@
     </CudaCompile>
     <CudaCompile Include="..\src\libaten\geometry\sphere.cpp">
       <Filter>aten\geometry</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\libidaten\svgf\svgf_upsampling.cu">
+      <Filter>svgf</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

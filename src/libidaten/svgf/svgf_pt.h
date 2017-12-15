@@ -176,6 +176,12 @@ namespace idaten
 		}
 
 	protected:
+		enum Resolution {
+			Hi,
+			Low,
+			Num
+		};
+
 		virtual void onGenPath(
 			int width, int height,
 			int sample, int maxSamples,
@@ -184,6 +190,7 @@ namespace idaten
 			cudaTextureObject_t texVtxNml);
 
 		virtual void onHitTest(
+			Resolution resType,
 			int width, int height,
 			int bounce,
 			cudaTextureObject_t texVtxPos);
@@ -194,11 +201,13 @@ namespace idaten
 			cudaTextureObject_t texVtxPos);
 
 		virtual void onShadeMiss(
+			Resolution resType,
 			int width, int height,
 			int bounce,
 			cudaSurfaceObject_t aovExportBuffer);
 
 		virtual void onShade(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			cudaSurfaceObject_t aovExportBuffer,
 			int hitcount,
@@ -208,23 +217,31 @@ namespace idaten
 			cudaTextureObject_t texVtxNml);
 
 		virtual void onGather(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			int width, int height,
 			int maxSamples);
 
 		void onTemporalReprojection(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			int width, int height);
 
 		void onVarianceEstimation(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			int width, int height);
 
 		void onAtrousFilter(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			int width, int height);
 
-		void copyFromTmpBufferToAov(int width, int height);
+		void coarseBuffer(int width, int height);
+
+		void upsamplingAndMerge(
+			cudaSurfaceObject_t outputSurf,
+			int width, int height);
 
 		void onFillAOV(
 			cudaSurfaceObject_t outputSurf,
@@ -250,7 +267,7 @@ namespace idaten
 		}
 
 	protected:
-		idaten::TypedCudaMemory<Path> m_paths;
+		idaten::TypedCudaMemory<Path> m_paths[Resolution::Num];
 		idaten::TypedCudaMemory<aten::Intersection> m_isects;
 		idaten::TypedCudaMemory<aten::ray> m_rays;
 
@@ -266,10 +283,13 @@ namespace idaten
 		int m_curAOVPos{ 0 };
 
 		// AOV buffer. Current frame and previous frame.
-		idaten::TypedCudaMemory<float4> m_aovNormalDepth[2];
-		idaten::TypedCudaMemory<float4> m_aovTexclrTemporalWeight[2];
-		idaten::TypedCudaMemory<float4> m_aovColorVariance[2];
-		idaten::TypedCudaMemory<float4> m_aovMomentMeshid[2];
+		idaten::TypedCudaMemory<float4> m_aovNormalDepth[Resolution::Num][2];
+		idaten::TypedCudaMemory<float4> m_aovTexclrTemporalWeight[Resolution::Num][2];
+		idaten::TypedCudaMemory<float4> m_aovColorVariance[Resolution::Num][2];
+		idaten::TypedCudaMemory<float4> m_aovMomentMeshid[Resolution::Num][2];
+
+		idaten::TypedCudaMemory<int> m_boolsSingular;
+		idaten::TypedCudaMemory<int> m_idxSingular;
 
 		aten::mat4 m_mtxW2V;		// World - View.
 		aten::mat4 m_mtxV2C;		// View - Clip.

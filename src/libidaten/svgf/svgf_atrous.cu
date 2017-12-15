@@ -186,7 +186,7 @@ __global__ void atrousFilter(
 		nextClrVarBuffer[idx] = make_float4(centerColor.x, centerColor.y, centerColor.z, 0.0f);
 
 		if (isFinalIter) {
-			centerColor *= texClrTemporalWeight;
+			//centerColor *= texClrTemporalWeight;
 
 			surf2Dwrite(
 				centerColor,
@@ -333,7 +333,7 @@ __global__ void atrousFilter(
 	}
 	
 	if (isFinalIter) {
-		sumC *= texClrTemporalWeight;
+		//sumC *= texClrTemporalWeight;
 
 		surf2Dwrite(
 			sumC,
@@ -367,6 +367,7 @@ __global__ void copyFromBufferToAov(
 namespace idaten
 {
 	void SVGFPathTracing::onAtrousFilter(
+		Resolution resType,
 		cudaSurfaceObject_t outputSurf,
 		int width, int height)
 	{
@@ -390,10 +391,10 @@ namespace idaten
 				atrousFilter<true, false> << <grid, block >> > (
 					outputSurf,
 					m_tmpBuf.ptr(),
-					m_aovNormalDepth[curaov].ptr(),
-					m_aovTexclrTemporalWeight[curaov].ptr(),
-					m_aovColorVariance[curaov].ptr(),
-					m_aovMomentMeshid[curaov].ptr(),
+					m_aovNormalDepth[resType][curaov].ptr(),
+					m_aovTexclrTemporalWeight[resType][curaov].ptr(),
+					m_aovColorVariance[resType][curaov].ptr(),
+					m_aovMomentMeshid[resType][curaov].ptr(),
 					m_atrousClrVar[cur].ptr(), m_atrousClrVar[next].ptr(),
 					stepScale,
 					m_thresholdTemporalWeight, m_atrousTapRadiusScale,
@@ -406,10 +407,10 @@ namespace idaten
 				atrousFilter<false, true> << <grid, block >> > (
 					outputSurf,
 					m_tmpBuf.ptr(),
-					m_aovNormalDepth[curaov].ptr(),
-					m_aovTexclrTemporalWeight[curaov].ptr(),
-					m_aovColorVariance[curaov].ptr(),
-					m_aovMomentMeshid[curaov].ptr(),
+					m_aovNormalDepth[resType][curaov].ptr(),
+					m_aovTexclrTemporalWeight[resType][curaov].ptr(),
+					m_aovColorVariance[resType][curaov].ptr(),
+					m_aovMomentMeshid[resType][curaov].ptr(),
 					m_atrousClrVar[cur].ptr(), m_atrousClrVar[next].ptr(),
 					stepScale,
 					m_thresholdTemporalWeight, m_atrousTapRadiusScale,
@@ -420,10 +421,10 @@ namespace idaten
 				atrousFilter<false, false> << <grid, block >> > (
 					outputSurf,
 					m_tmpBuf.ptr(),
-					m_aovNormalDepth[curaov].ptr(),
-					m_aovTexclrTemporalWeight[curaov].ptr(),
-					m_aovColorVariance[curaov].ptr(),
-					m_aovMomentMeshid[curaov].ptr(),
+					m_aovNormalDepth[resType][curaov].ptr(),
+					m_aovTexclrTemporalWeight[resType][curaov].ptr(),
+					m_aovColorVariance[resType][curaov].ptr(),
+					m_aovMomentMeshid[resType][curaov].ptr(),
 					m_atrousClrVar[cur].ptr(), m_atrousClrVar[next].ptr(),
 					stepScale,
 					m_thresholdTemporalWeight, m_atrousTapRadiusScale,
@@ -435,21 +436,11 @@ namespace idaten
 			cur = next;
 			next = 1 - cur;
 		}
-	}
-
-	void SVGFPathTracing::copyFromTmpBufferToAov(int width, int height)
-	{
-		dim3 block(BLOCK_SIZE, BLOCK_SIZE);
-		dim3 grid(
-			(width + block.x - 1) / block.x,
-			(height + block.y - 1) / block.y);
-
-		int curaov = getCurAovs();
 
 		// Copy color from temporary buffer to AOV buffer for next temporal reprojection.
 		copyFromBufferToAov << <grid, block >> > (
 			m_tmpBuf.ptr(),
-			m_aovColorVariance[curaov].ptr(),
+			m_aovColorVariance[resType][curaov].ptr(),
 			width, height);
 		checkCudaKernel(copyFromBufferToAov);
 	}

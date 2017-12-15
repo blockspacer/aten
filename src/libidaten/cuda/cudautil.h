@@ -68,6 +68,7 @@ namespace idaten {
 	if (cudaSuccess != err) {\
 		AT_PRINTF("Cuda Kernel Err with Sync(%s) [%s]\n", (#kernel), cudaGetErrorString(err));\
 	}\
+	AT_ASSERT(false);\
 }
 #else
 #define checkCudaKernel(kernel)

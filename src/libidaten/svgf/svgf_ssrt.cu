@@ -125,7 +125,7 @@ namespace idaten
 
 		hitTestPrimaryRayInScreenSpace << <grid, block >> > (
 			gbuffer,
-			m_paths.ptr(),
+			m_paths[Resolution::Hi].ptr(),
 			m_isects.ptr(),
 			m_hitbools.ptr(),
 			width, height,
