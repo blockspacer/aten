@@ -71,6 +71,7 @@ inline __device__ void computePrevScreenPos(
 }
 
 __global__ void temporalReprojection(
+	bool enableMedianFilter,
 	const idaten::SVGFPathTracing::Path* __restrict__ paths,
 	const aten::CameraParameter* __restrict__ camera,
 	float4* curAovNormalDepth,
@@ -83,7 +84,6 @@ __global__ void temporalReprojection(
 	const float4* __restrict__ prevAovMomentMeshid,
 	const aten::mat4* __restrict__ mtxs,
 	cudaSurfaceObject_t dst,
-	float4* tmpBuffer,
 	int width, int height)
 {
 	int ix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -206,12 +206,13 @@ __global__ void temporalReprojection(
 
 	curAovTexclrTemporalWeight[idx].w = weight;
 
-#ifdef ENABLE_MEDIAN_FILTER
-	tmpBuffer[idx] = curColor;
-#else
 	curAovColorVariance[idx].x = curColor.x;
 	curAovColorVariance[idx].y = curColor.y;
 	curAovColorVariance[idx].z = curColor.z;
+	
+	if (enableMedianFilter) {
+		return;
+	}
 
 	// TODO
 	// åªÉtÉåÅ[ÉÄÇ∆âﬂãéÉtÉåÅ[ÉÄÇ™ìØó¶Ç≈â¡éZÇ≥ÇÍÇÈÇΩÇﬂÅAÇ«ÇøÇÁÇ©Ç…ã≠Ç¢âeãøÇ™Ç≈ÇÈÇ∆âeãøÇ™é„Ç‹ÇÈÇ‹Ç≈Ç…îÒèÌÇ…éûä‘Ç™Ç©Ç©ÇÈ.
@@ -280,7 +281,6 @@ __global__ void temporalReprojection(
 		curAovMomentMeshid[idx].y = centerMoment.y;
 		curAovMomentMeshid[idx].z = centerMoment.z;
 	}
-#endif
 
 	surf2Dwrite(
 		curColor,
@@ -330,7 +330,6 @@ __global__ void dilateWeight(
 	aovTexclrTemporalWeight[idx].w = temporalWeight;
 }
 
-#if 0
 inline __device__ float3 min(float3 a, float3 b)
 {
 	return make_float3(
@@ -357,11 +356,9 @@ inline __device__ float3 max(float3 a, float3 b)
 #define mnmx5(a, b, c, d, e)	s2(a, b); s2(c, d); mn3(a, c, e); mx3(b, d, e);           // 6 exchanges
 #define mnmx6(a, b, c, d, e, f) s2(a, d); s2(b, e); s2(c, f); mn3(a, b, c); mx3(d, e, f); // 7 exchanges
 
-template <bool isReferPath>
 inline __device__ float3 medianFilter(
 	int ix, int iy,
 	const float4* src,
-	const idaten::SVGFPathTracing::Path* paths,
 	int width, int height)
 {
 	float3 v[9];
@@ -375,13 +372,9 @@ inline __device__ float3 medianFilter(
 
 			int pidx = getIdx(xx, yy, width);
 
-			if (isReferPath) {
-				v[pos] = make_float3(paths[pidx].contrib.x, paths[pidx].contrib.y, paths[pidx].contrib.z);
-			}
-			else {
-				auto s = src[pidx];
-				v[pos] = make_float3(s.x, s.y, s.z);
-			}
+			auto s = src[pidx];
+			v[pos] = make_float3(s.x, s.y, s.z);
+
 			pos++;
 		}
 	}
@@ -398,11 +391,15 @@ inline __device__ float3 medianFilter(
 
 __global__ void medianFilter(
 	cudaSurfaceObject_t dst,
-	const float4* __restrict__ src,
-	idaten::SVGFPathTracing::AOV* curAovs,
-	const idaten::SVGFPathTracing::AOV* __restrict__ prevAovs,
+	float4* curAovNormalDepth,
+	float4* curAovTexclrTemporalWeight,
+	float4* curAovColorVariance,
+	float4* curAovMomentMeshid,
+	const float4* __restrict__ prevAovNormalDepth,
+	const float4* __restrict__ prevAovTexclrTemporalWeight,
+	const float4* __restrict__ prevAovColorVariance,
+	const float4* __restrict__ prevAovMomentMeshid,
 	const aten::mat4* __restrict__ mtxs,
-	const idaten::SVGFPathTracing::Path* __restrict__ paths,
 	int width, int height)
 {
 	int ix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -414,19 +411,22 @@ __global__ void medianFilter(
 
 	auto idx = getIdx(ix, iy, width);
 
-	const int centerMeshId = curAovs[idx].meshid;
+	auto nmlDepth = curAovNormalDepth[idx];
+	auto momentMeshId = curAovMomentMeshid[idx];
+
+	const float3 centerNormal = make_float3(nmlDepth.x, nmlDepth.y, nmlDepth.z);
+	const float centerDepth = nmlDepth.w;
+	const int centerMeshId = (int)momentMeshId.w;
 
 	if (centerMeshId < 0) {
-		// This pixel is background, so nothing is done.
 		return;
 	}
 
-	auto curColor = medianFilter<false>(ix, iy, src, paths, width, height);
+	auto curColor = medianFilter(ix, iy, curAovColorVariance, width, height);
 
-	curAovs[idx].color = curColor;
-
-	const float centerDepth = curAovs[idx].depth;
-	const auto centerNormal = curAovs[idx].normal;
+	curAovColorVariance[idx].x = curColor.x;
+	curAovColorVariance[idx].y = curColor.y;
+	curAovColorVariance[idx].z = curColor.z;
 
 	static const float zThreshold = 0.05f;
 	static const float nThreshold = 0.98f;
@@ -461,16 +461,19 @@ __global__ void medianFilter(
 
 			int pidx = getIdx(px, py, width);
 
-			const float prevDepth = prevAovs[pidx].depth;
-			const int prevMeshId = prevAovs[pidx].meshid;
+			nmlDepth = prevAovNormalDepth[pidx];
+			momentMeshId = prevAovMomentMeshid[pidx];
 
-			auto prevNormal = prevAovs[pidx].normal;
+			const float prevDepth = nmlDepth.w;
+			const int prevMeshId = (int)momentMeshId.w;
+			float3 prevNormal = make_float3(nmlDepth.x, nmlDepth.y, nmlDepth.z);
 
 			if (abs(1 - centerDepth / prevDepth) < zThreshold
 				&& dot(centerNormal, prevNormal) > nThreshold
 				&& centerMeshId == prevMeshId)
 			{
-				float3 prevMoment = prevAovs[pidx].moments;
+				auto momentMeshid = prevAovMomentMeshid[pidx];;
+				float3 prevMoment = make_float3(momentMeshid.x, momentMeshid.y, momentMeshid.z);
 
 				// êœéZÉtÉåÅ[ÉÄêîÇÇPëùÇ‚Ç∑.
 				frame = (int)prevMoment.z + 1;
@@ -481,7 +484,9 @@ __global__ void medianFilter(
 
 		centerMoment.z = frame;
 
-		curAovs[idx].moments = centerMoment;
+		curAovMomentMeshid[idx].x = centerMoment.x;
+		curAovMomentMeshid[idx].y = centerMoment.y;
+		curAovMomentMeshid[idx].z = centerMoment.z;
 	}
 
 	surf2Dwrite(
@@ -490,7 +495,6 @@ __global__ void medianFilter(
 		ix * sizeof(float4), iy,
 		cudaBoundaryModeTrap);
 }
-#endif
 
 namespace idaten
 {
@@ -521,8 +525,12 @@ namespace idaten
 		m_mtxs.init(sizeof(aten::mat4) * AT_COUNTOF(mtxs));
 		m_mtxs.writeByNum(mtxs, AT_COUNTOF(mtxs));
 
+		bool enableMedianFilter = (resType == Resolution::Low);
+		//bool enableMedianFilter = false;
+
 		temporalReprojection << <grid, block >> > (
 		//temporalReprojection << <1, 1 >> > (
+			enableMedianFilter,
 			m_paths[resType].ptr(),
 			m_cam.ptr(),
 			m_aovNormalDepth[resType][curaov].ptr(),
@@ -535,23 +543,26 @@ namespace idaten
 			m_aovMomentMeshid[resType][prevaov].ptr(),
 			m_mtxs.ptr(),
 			outputSurf,
-			m_tmpBuf.ptr(),
 			width, height);
 
 		checkCudaKernel(temporalReprojection);
 
-#ifdef ENABLE_MEDIAN_FILTER
-		medianFilter << <grid, block >> > (
-			outputSurf,
-			m_tmpBuf.ptr(),
-			curaov.ptr(),
-			prevaov.ptr(),
-			m_mtxs.ptr(),
-			m_paths.ptr(),
-			width, height);
+		if (enableMedianFilter) {
+			medianFilter << <grid, block >> > (
+				outputSurf,
+				m_aovNormalDepth[resType][curaov].ptr(),
+				m_aovTexclrTemporalWeight[resType][curaov].ptr(),
+				m_aovColorVariance[resType][curaov].ptr(),
+				m_aovMomentMeshid[resType][curaov].ptr(),
+				m_aovNormalDepth[resType][prevaov].ptr(),
+				m_aovTexclrTemporalWeight[resType][prevaov].ptr(),
+				m_aovColorVariance[resType][prevaov].ptr(),
+				m_aovMomentMeshid[resType][prevaov].ptr(),
+				m_mtxs.ptr(),
+				width, height);
 
-		checkCudaKernel(medianFilter);
-#endif
+			checkCudaKernel(medianFilter);
+		}
 
 		dilateWeight << <grid, block >> > (
 			m_aovTexclrTemporalWeight[resType][curaov].ptr(),
