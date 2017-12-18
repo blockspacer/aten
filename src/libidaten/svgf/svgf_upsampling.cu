@@ -101,9 +101,19 @@ __global__ void coarseBuffers(
 		dstAovMomentMeshid[idx] = srcAovMomentMeshid[srcIdx];
 	}
 	else {
+		int srcIdx = getIdx(hiResX, hiResY, width);
+
+		dstPaths[idx] = srcPaths[srcIdx];
+		dstAovNormalDepth[idx] = srcAovNormalDepth[srcIdx];
+		dstRays[idx] = srcRays[srcIdx];
+		dstAovMomentMeshid[idx] = srcAovMomentMeshid[srcIdx];
+
 		dstPaths[idx].isKill = true;
 		dstPaths[idx].isTerminate = true;
 	}
+
+	// Reset contribution.
+	dstPaths[idx].contrib = aten::vec3(0.0f);
 }
 
 inline __device__ float4 samplePoint(
