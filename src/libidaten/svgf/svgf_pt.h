@@ -217,6 +217,13 @@ namespace idaten
 			cudaTextureObject_t texVtxPos,
 			cudaTextureObject_t texVtxNml);
 
+		void onShadeDirectLight(
+			int hitcount,
+			int width, int height,
+			int bounce, int rrBounce,
+			cudaTextureObject_t texVtxPos,
+			cudaTextureObject_t texVtxNml);
+
 		virtual void onGather(
 			Resolution resType,
 			cudaSurfaceObject_t outputSurf,

@@ -379,6 +379,111 @@ __global__ void shadeMissWithEnvmap(
 	}
 }
 
+__global__ void shadeDirectLight(
+	int width, int height,
+	idaten::SVGFPathTracing::Path* paths,
+	const int* __restrict__ hitindices,
+	int hitnum,
+	const aten::Intersection* __restrict__ isects,
+	aten::ray* rays,
+	int frame,
+	int bounce, int rrBounce,
+	const aten::GeomParameter* __restrict__ shapes, int geomnum,
+	const aten::MaterialParameter* __restrict__ mtrls,
+	const aten::LightParameter* __restrict__ lights, int lightnum,
+	cudaTextureObject_t* nodes,
+	const aten::PrimitiveParamter* __restrict__ prims,
+	cudaTextureObject_t vtxPos,
+	cudaTextureObject_t vtxNml,
+	const aten::mat4* __restrict__ matrices,
+	cudaTextureObject_t* textures,
+	unsigned int* random)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (idx >= hitnum) {
+		return;
+	}
+
+	Context ctxt;
+	{
+		ctxt.geomnum = geomnum;
+		ctxt.shapes = shapes;
+		ctxt.mtrls = mtrls;
+		ctxt.lightnum = lightnum;
+		ctxt.lights = lights;
+		ctxt.nodes = nodes;
+		ctxt.prims = prims;
+		ctxt.vtxPos = vtxPos;
+		ctxt.vtxNml = vtxNml;
+		ctxt.matrices = matrices;
+		ctxt.textures = textures;
+	}
+
+	idx = hitindices[idx];
+
+	__shared__ idaten::SVGFPathTracing::Path shPaths[64];
+	__shared__ aten::MaterialParameter shMtrls[64];
+
+	shPaths[threadIdx.x] = paths[idx];
+
+	const auto ray = rays[idx];
+
+#if IDATEN_SAMPLER == IDATEN_SAMPLER_SOBOL
+	auto scramble = random[idx] * 0x1fe3434f;
+	shPaths[threadIdx.x].sampler.init(frame, 4 + bounce * 300, scramble);
+#elif IDATEN_SAMPLER == IDATEN_SAMPLER_CMJ
+	auto rnd = random[idx];
+	auto scramble = rnd * 0x1fe3434f * ((frame + 331 * rnd) / (aten::CMJ::CMJ_DIM * aten::CMJ::CMJ_DIM));
+	shPaths[threadIdx.x].sampler.init(frame % (aten::CMJ::CMJ_DIM * aten::CMJ::CMJ_DIM), 4 + bounce * 300, scramble);
+#endif
+
+	aten::hitrecord rec;
+
+	const auto& isect = isects[idx];
+
+	auto obj = &ctxt.shapes[isect.objid];
+	evalHitResult(&ctxt, obj, ray, &rec, &isect);
+
+	shMtrls[threadIdx.x] = ctxt.mtrls[rec.mtrlid];
+
+	bool isBackfacing = dot(rec.normal, -ray.dir) < 0.0f;
+
+	// 交差位置の法線.
+	// 物体からのレイの入出を考慮.
+	aten::vec3 orienting_normal = rec.normal;
+
+	// Implicit conection to light.
+	if (shMtrls[threadIdx.x].attrib.isEmissive) {
+		if (!isBackfacing) {
+			float weight = 1.0f;
+
+			if (bounce > 0 && !shPaths[threadIdx.x].isSingular) {
+				auto cosLight = dot(orienting_normal, -ray.dir);
+				auto dist2 = aten::squared_length(rec.p - ray.org);
+
+				if (cosLight >= 0) {
+					auto pdfLight = 1 / rec.area;
+
+					// Convert pdf area to sradian.
+					// http://www.slideshare.net/h013/edubpt-v100
+					// p31 - p35
+					pdfLight = pdfLight * dist2 / cosLight;
+
+					weight = shPaths[threadIdx.x].pdfb / (pdfLight + shPaths[threadIdx.x].pdfb);
+				}
+			}
+
+			shPaths[threadIdx.x].contrib += shPaths[threadIdx.x].throughput * weight * shMtrls[threadIdx.x].baseColor;
+		}
+
+		// When ray hit the light, tracing will finish.
+		shPaths[threadIdx.x].isTerminate = true;
+		paths[idx] = shPaths[threadIdx.x];
+		return;
+	}
+}
+
 template <bool isFirstBounce, int ShadowRayNum>
 __global__ void shade(
 	float4* aovNormalDepth,
@@ -1125,6 +1230,37 @@ namespace idaten
 #endif
 	}
 
+	void SVGFPathTracing::onShadeDirectLight(
+		int hitcount,
+		int width, int height,
+		int bounce, int rrBounce,
+		cudaTextureObject_t texVtxPos,
+		cudaTextureObject_t texVtxNml)
+	{
+		dim3 blockPerGrid((hitcount + 64 - 1) / 64);
+		dim3 threadPerBlock(64);
+
+		shadeDirectLight << <blockPerGrid, threadPerBlock >> > (
+			width, height,
+			m_paths[Resolution::Hi].ptr(),
+			m_hitidx.ptr(), hitcount,
+			m_isects.ptr(),
+			m_rays[Resolution::Hi].ptr(),
+			m_frame,
+			bounce, rrBounce,
+			m_shapeparam.ptr(), m_shapeparam.num(),
+			m_mtrlparam.ptr(),
+			m_lightparam.ptr(), m_lightparam.num(),
+			m_nodetex.ptr(),
+			m_primparams.ptr(),
+			texVtxPos, texVtxNml,
+			m_mtxparams.ptr(),
+			m_tex.ptr(),
+			m_random.ptr());
+
+		checkCudaKernel(shadeDirectLight);
+	}
+
 	void SVGFPathTracing::onGather(
 		Resolution resType,
 		cudaSurfaceObject_t outputSurf,
@@ -1153,6 +1289,7 @@ namespace idaten
 			checkCudaKernel(gather);
 		}
 		else if (m_mode == Mode::AOVar) {
+			onFillAOV(outputSurf, width, height);
 			onFillAOV(outputSurf, width, height);
 		}
 		else {
