@@ -196,8 +196,40 @@ namespace idaten
 				bounce++;
 			}
 
+#if 1
+			// Check if 2nd bounce ray hits light.
+			if (bounce < maxBounce) {
+				onHitTest(
+					Resolution::Hi,
+					width, height,
+					bounce,
+					vtxTexPos);
+
+				onShadeMiss(
+					Resolution::Hi,
+					width, height, bounce, aovExportBuffer);
+
+				int hitcount = 0;
+				idaten::Compaction::compact(
+					m_hitidx,
+					m_hitbools,
+					&hitcount);
+
+				//AT_PRINTF("%d\n", hitcount);
+
+				if (hitcount > 0) {
+					onShadeDirectLight(
+						hitcount,
+						width, height,
+						bounce, rrBounce,
+						vtxTexPos, vtxTexNml);
+				}
+			}
+#endif
+
 			coarseBuffer(width, height);
 
+#if 1
 			// For specular.
 			while (bounce < maxBounce) {
 				onHitTest(
@@ -231,6 +263,10 @@ namespace idaten
 
 				bounce++;
 			}
+#endif
+
+			// Clear for low resolution.
+			cudaMemset(m_hitbools.ptr(), 0, m_hitbools.bytes());
 
 			// Reset.
 			bounce = 1;
