@@ -114,7 +114,7 @@ __global__ void varianceEstimation(
 
 	int frame = (int)centerMoment.z;
 
-	centerMoment /= centerMoment.z;
+	//centerMoment /= centerMoment.z;
 
 	// •ªU‚ğŒvZ.
 	float var = centerMoment.x - centerMoment.y * centerMoment.y;
