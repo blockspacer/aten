@@ -175,48 +175,32 @@ __global__ void onUpsamplingAndMerge(
 	int w = lowResWidth;
 	int h = lowResHeight;
 
-	switch (pos) {
-	case 0:
-		lowResNmlDepth[0] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 0);
-		lowResNmlDepth[1] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 1, 0);
-		lowResNmlDepth[2] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 1);
-		lowResNmlDepth[3] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 1, 1);
-		lowResClr[0] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, 0);
-		lowResClr[1] = sampleBilinear(inLowResColor, w, h, lx, ly, 1, 0);
-		lowResClr[2] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, 1);
-		lowResClr[3] = sampleBilinear(inLowResColor, w, h, lx, ly, 1, 1);
-		break;
-	case 1:
-		lowResNmlDepth[0] = samplePoint(inLowResNmlDepth, w, h, lx, ly, -1, 0);
-		lowResNmlDepth[1] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 0);
-		lowResNmlDepth[2] = samplePoint(inLowResNmlDepth, w, h, lx, ly, -1, 1);
-		lowResNmlDepth[3] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 1);
-		lowResClr[0] = sampleBilinear(inLowResColor, w, h, lx, ly, -1, 0);
-		lowResClr[1] = sampleBilinear(inLowResColor, w, h, lx, ly, 1, 0);
-		lowResClr[2] = sampleBilinear(inLowResColor, w, h, lx, ly, -1, 1);
-		lowResClr[3] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, 1);
-		break;
-	case 2:
-		lowResNmlDepth[0] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, -1);
-		lowResNmlDepth[1] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 1, -1);
-		lowResNmlDepth[2] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 0);
-		lowResNmlDepth[3] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 1, 0);
-		lowResClr[0] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, -1);
-		lowResClr[1] = sampleBilinear(inLowResColor, w, h, lx, ly, 1, -1);
-		lowResClr[2] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, 0);
-		lowResClr[3] = sampleBilinear(inLowResColor, w, h, lx, ly, 1, 0);
-		break;
-	case 3:
-		lowResNmlDepth[0] = samplePoint(inLowResNmlDepth, w, h, lx, ly, -1, -1);
-		lowResNmlDepth[1] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, -1);
-		lowResNmlDepth[2] = samplePoint(inLowResNmlDepth, w, h, lx, ly, -1, 0);
-		lowResNmlDepth[3] = samplePoint(inLowResNmlDepth, w, h, lx, ly, 0, 0);
-		lowResClr[0] = sampleBilinear(inLowResColor, w, h, lx, ly, -1, -1);
-		lowResClr[1] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, -1);
-		lowResClr[2] = sampleBilinear(inLowResColor, w, h, lx, ly, -1, 0);
-		lowResClr[3] = sampleBilinear(inLowResColor, w, h, lx, ly, 0, 0);
-		break;
-	}
+	static const float offset[4][8] = {
+		{
+			0, 0, 
+			1, 0,
+			0, 1,
+			1, 1,
+		},
+		{
+			-1, 0,
+			 0, 0,
+			-1, 1,
+			 0, 1,
+		},
+		{
+			0, -1,
+			1, -1,
+			0,  0,
+			1,  0,
+		},
+		{
+			-1, -1,
+			 0, -1,
+			-1,  0,
+			 0,  0,
+		},
+	};
 
 	static const float bilateralWeight[] = {
 		9.0 / 16.0, 3.0 / 16.0, 3.0 / 16.0, 1.0 / 16.0,
@@ -227,20 +211,29 @@ __global__ void onUpsamplingAndMerge(
 
 	float4 hiResNmlDepth = inHiResNmlDepth[hiResIdx];
 
+	// Disable depth.
+	hiResNmlDepth.w = 0.0f;
+
 	float4 sum = make_float4(0.0f);
 	float sumWeight = 0.0001f;
 
+#pragma unroll
 	for (int i = 0; i < 4; i++) {
-		float depthWeight = clamp(1.0 / (0.0001f + abs(hiResNmlDepth.w - lowResNmlDepth[i].w)), 0.0f, 1.0f);
+		int offsetx = offset[pos][i * 4 + 0];
+		int offsety = offset[pos][i * 4 + 1];
+
+		auto lowResNmlDepth = samplePoint(inLowResNmlDepth, w, h, lx, ly, offsetx, offsety);
+		auto lowResClr = sampleBilinear(inLowResColor, w, h, lx, ly, offsetx, offsety);
+
+		float depthWeight = clamp(1.0 / (0.0001f + abs(hiResNmlDepth.w - lowResNmlDepth.w)), 0.0f, 1.0f);
 
 		// Disable depth.
-		hiResNmlDepth.w = 0.0f;
-		lowResNmlDepth[i].w = 0.0f;
+		lowResNmlDepth.w = 0.0f;
 
-		float nmlWeight = clamp(powf(dot(hiResNmlDepth, lowResNmlDepth[i]), 32), 0.0f, 1.0f);
+		float nmlWeight = clamp(powf(dot(hiResNmlDepth, lowResNmlDepth), 32), 0.0f, 1.0f);
 
 		float weight = nmlWeight * depthWeight * bilateralWeight[pos * 4 + i];
-		sum += lowResClr[i] * weight;
+		sum += lowResClr * weight;
 		sumWeight += weight;
 	}
 
@@ -248,8 +241,6 @@ __global__ void onUpsamplingAndMerge(
 
 	// Merge.
 	float4 hiResColor = inHiResColor[hiResIdx];
-	//hiResColor = sum;
-
 	hiResColor += inLowResColor[getIdx(lx, ly, lowResWidth)];
 
 	// Multiply Albedo.
