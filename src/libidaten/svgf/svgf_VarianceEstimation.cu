@@ -180,7 +180,7 @@ __global__ void varianceEstimation(
 					int sampleMeshId = (int)momentMeshid.w;
 
 					float3 moment = make_float3(momentMeshid.x, momentMeshid.y, momentMeshid.z);
-					moment /= moment.z;
+					//moment /= moment.z;
 
 #if 0
 					float n = 1 - dot(sampleNml, centerNormal);

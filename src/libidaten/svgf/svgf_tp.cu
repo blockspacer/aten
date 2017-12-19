@@ -249,7 +249,8 @@ __global__ void temporalReprojection(
 				// ÏZƒtƒŒ[ƒ€”‚ğ‚P‘‚â‚·.
 				frame = (int)prevMoment.z + 1;
 
-				centerMoment += prevMoment;
+				//centerMoment += prevMoment;
+				centerMoment = lerp(prevMoment, centerMoment, 0.2f);
 			}
 		}
 
@@ -456,7 +457,8 @@ __global__ void medianFilter(
 				// ÏZƒtƒŒ[ƒ€”‚ğ‚P‘‚â‚·.
 				frame = (int)prevMoment.z + 1;
 
-				centerMoment += prevMoment;
+				//centerMoment += prevMoment;
+				centerMoment = lerp(prevMoment, centerMoment, 0.2f);
 			}
 		}
 
