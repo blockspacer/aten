@@ -313,6 +313,8 @@ namespace idaten
 			Resolution::Low,
 			outputSurf, width / 2, height / 2, maxSamples);
 
+		m_mtxPrevW2V = m_mtxW2V;
+
 		if (m_mode == Mode::SVGF
 			|| m_mode == Mode::ATrous)
 		{

@@ -1309,7 +1309,5 @@ namespace idaten
 					width, height);
 			}
 		}
-
-		m_mtxPrevW2V = m_mtxW2V;
 	}
 }

@@ -129,7 +129,7 @@ __global__ void temporalReprojection(
 	static const float zThreshold = 0.05f;
 	static const float nThreshold = 0.98f;
 
-	aten::vec4 centerPrevPos;
+	int centerPrevIdx = -1;
 
 #pragma unroll
 	for (int y = -1; y <= 1; y++) {
@@ -151,10 +151,6 @@ __global__ void temporalReprojection(
 				&prevPos,
 				mtxs);
 
-			if (x == 0 && y == 0) {
-				centerPrevPos = prevPos;
-			}
-
 			// [0, 1]の範囲内に入っているか.
 			bool isInsideX = (0.0 <= prevPos.x) && (prevPos.x <= 1.0);
 			bool isInsideY = (0.0 <= prevPos.y) && (prevPos.y <= 1.0);
@@ -168,6 +164,11 @@ __global__ void temporalReprojection(
 				py = clamp(py, 0, height - 1);
 
 				int pidx = getIdx(px, py, width);
+
+				if (x == 0 && y == 0) {
+					// Keep index to compute moment.
+					centerPrevIdx = pidx;
+				}
 
 				nmlDepth = prevAovNormalDepth[pidx];
 				momentMeshId = prevAovMomentMeshid[pidx];
@@ -225,34 +226,11 @@ __global__ void temporalReprojection(
 		float lum = AT_NAME::color::luminance(curColor.x, curColor.y, curColor.z);
 		float3 centerMoment = make_float3(lum * lum, lum, 0);
 
-#if 0
-		// 前のフレームのクリップ空間座標を計算.
-		aten::vec4 prevPos;
-		computePrevScreenPos(
-			ix, iy,
-			centerDepth,
-			width, height,
-			&prevPos,
-			mtxs);
-#else
-		aten::vec4 prevPos = centerPrevPos;
-#endif
-
-		// [0, 1]の範囲内に入っているか.
-		bool isInsideX = (0.0 <= prevPos.x) && (prevPos.x <= 1.0);
-		bool isInsideY = (0.0 <= prevPos.y) && (prevPos.y <= 1.0);
-
 		// 積算フレーム数のリセット.
 		int frame = 1;
 
-		if (isInsideX && isInsideY) {
-			int px = (int)(prevPos.x * width - 0.5f);
-			int py = (int)(prevPos.y * height - 0.5f);
-
-			px = clamp(px, 0, width - 1);
-			py = clamp(py, 0, height - 1);
-
-			int pidx = getIdx(px, py, width);
+		if (centerPrevIdx >= 0) {
+			int pidx = centerPrevIdx;
 
 			nmlDepth = prevAovNormalDepth[pidx];
 			momentMeshId = prevAovMomentMeshid[pidx];
@@ -526,7 +504,6 @@ namespace idaten
 		m_mtxs.writeByNum(mtxs, AT_COUNTOF(mtxs));
 
 		bool enableMedianFilter = (resType == Resolution::Low);
-		//bool enableMedianFilter = false;
 
 		temporalReprojection << <grid, block >> > (
 		//temporalReprojection << <1, 1 >> > (
@@ -547,6 +524,7 @@ namespace idaten
 
 		checkCudaKernel(temporalReprojection);
 
+#if 1
 		if (enableMedianFilter) {
 			medianFilter << <grid, block >> > (
 				outputSurf,
@@ -563,6 +541,7 @@ namespace idaten
 
 			checkCudaKernel(medianFilter);
 		}
+#endif
 
 		dilateWeight << <grid, block >> > (
 			m_aovTexclrTemporalWeight[resType][curaov].ptr(),
