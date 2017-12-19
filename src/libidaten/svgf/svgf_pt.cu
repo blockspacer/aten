@@ -1289,8 +1289,7 @@ namespace idaten
 			checkCudaKernel(gather);
 		}
 		else if (m_mode == Mode::AOVar) {
-			onFillAOV(outputSurf, width, height);
-			onFillAOV(outputSurf, width, height);
+			onFillAOV(resType, outputSurf, width, height);
 		}
 		else {
 			if (isFirstFrame()) {

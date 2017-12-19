@@ -252,6 +252,7 @@ namespace idaten
 			int width, int height);
 
 		void onFillAOV(
+			Resolution resType,
 			cudaSurfaceObject_t outputSurf,
 			int width, int height);
 

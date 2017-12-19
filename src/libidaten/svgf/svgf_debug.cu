@@ -43,7 +43,10 @@ __global__ void fillAOV(
 		clr = make_float4(n.x, n.y, n.z, 1);
 	}
 	else if (mode == idaten::SVGFPathTracing::AOVMode::Depth) {
+		auto d = aovNormalDepth[idx].w;
 		// TODO
+		d /= 1000.0f;
+		clr = make_float4(d, d, d, 1);
 	}
 	else if (mode == idaten::SVGFPathTracing::AOVMode::TexColor) {
 		clr = aovTexclrTemporalWeight[idx];
@@ -124,6 +127,7 @@ __global__ void pickPixel(
 namespace idaten
 {
 	void SVGFPathTracing::onFillAOV(
+		Resolution resType,
 		cudaSurfaceObject_t outputSurf,
 		int width, int height)
 	{
@@ -138,8 +142,8 @@ namespace idaten
 			outputSurf,
 			m_aovMode,
 			width, height,
-			m_aovNormalDepth[Resolution::Hi][curaov].ptr(),
-			m_aovTexclrTemporalWeight[Resolution::Hi][curaov].ptr(),
+			m_aovNormalDepth[resType][curaov].ptr(),
+			m_aovTexclrTemporalWeight[resType][curaov].ptr(),
 			m_isects.ptr());
 	}
 
