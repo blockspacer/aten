@@ -241,7 +241,7 @@ __global__ void onUpsamplingAndMerge(
 
 	// Merge.
 	float4 hiResColor = inHiResColor[hiResIdx];
-	hiResColor += inLowResColor[getIdx(lx, ly, lowResWidth)];
+	hiResColor += sum;
 
 	// Multiply Albedo.
 	hiResColor *= aovTexclrTemporalWeight[hiResIdx];
