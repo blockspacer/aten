@@ -505,7 +505,8 @@ namespace idaten
 		m_mtxs.init(sizeof(aten::mat4) * AT_COUNTOF(mtxs));
 		m_mtxs.writeByNum(mtxs, AT_COUNTOF(mtxs));
 
-		bool enableMedianFilter = (resType == Resolution::Low);
+		//bool enableMedianFilter = (resType == Resolution::Low);
+		bool enableMedianFilter = false;
 
 		temporalReprojection << <grid, block >> > (
 		//temporalReprojection << <1, 1 >> > (

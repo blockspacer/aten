@@ -31,6 +31,7 @@ __global__ void checkIfSingular(
 }
 
 __global__ void coarseBuffers(
+	cudaSurfaceObject_t dstNmlDepth,
 	const idaten::SVGFPathTracing::Path* __restrict__ srcPaths,
 	const aten::ray* __restrict__ srcRays,
 	const float4* __restrict__ srcAovNormalDepth,
@@ -114,6 +115,12 @@ __global__ void coarseBuffers(
 
 	// Reset contribution.
 	dstPaths[idx].contrib = aten::vec3(0.0f);
+
+	surf2Dwrite(
+		dstAovNormalDepth[idx],
+		dstNmlDepth,
+		ix * sizeof(float4), iy,
+		cudaBoundaryModeTrap);
 }
 
 inline __device__ float4 samplePoint(
@@ -267,7 +274,11 @@ namespace idaten
 		int lowResWidth = width / 2;
 		int lowResHeight = height / 2;
 
+		m_aovLowResNmlDepth.map();
+		auto aovLowResNmlDepthExportBuffer = m_aovLowResNmlDepth.bind();
+
 		coarseBuffers << <grid, block >> > (
+			aovLowResNmlDepthExportBuffer,
 			m_paths[Resolution::Hi].ptr(),
 			m_rays[Resolution::Hi].ptr(),
 			m_aovNormalDepth[Resolution::Hi][curaov].ptr(),
@@ -279,6 +290,9 @@ namespace idaten
 			width, height,
 			lowResWidth, lowResHeight);
 		checkCudaKernel(coarseBuffers);
+
+		m_aovLowResNmlDepth.unbind();
+		m_aovLowResNmlDepth.unmap();
 
 		// Terminate path which is not singular.
 		checkIfSingular << <grid, block >> > (

@@ -137,6 +137,7 @@ inline __device__ float gaussFilter3x3(
 
 template <bool isFirstIter, bool isFinalIter>
 __global__ void atrousFilter(
+	bool isResHi,
 	cudaSurfaceObject_t dst,
 	float4* tmpBuffer,
 	const float4* __restrict__ aovNormalDepth,
@@ -186,7 +187,7 @@ __global__ void atrousFilter(
 		nextClrVarBuffer[idx] = make_float4(centerColor.x, centerColor.y, centerColor.z, 0.0f);
 
 		if (isFinalIter) {
-			//centerColor *= texClrTemporalWeight;
+			centerColor *= isResHi ? texClrTemporalWeight : make_float4(1);
 
 			surf2Dwrite(
 				centerColor,
@@ -333,7 +334,7 @@ __global__ void atrousFilter(
 	}
 	
 	if (isFinalIter) {
-		//sumC *= texClrTemporalWeight;
+		sumC *= isResHi ? texClrTemporalWeight : make_float4(1);
 
 		surf2Dwrite(
 			sumC,
@@ -383,12 +384,24 @@ namespace idaten
 		int cur = 0;
 		int next = 1;
 
+		cudaSurfaceObject_t aovLowResColorExportBuffer = 0;
+
+		if (resType == Resolution::Low) {
+			m_aovLowResColor.map();
+			aovLowResColorExportBuffer = m_aovLowResColor.bind();
+		}
+
+		outputSurf = resType == Resolution::Hi ? outputSurf : aovLowResColorExportBuffer;
+
+		bool isResHi = (resType == Resolution::Hi);
+
 		for (int i = 0; i < ITER; i++) {
 			int stepScale = 1 << i;
 
 			if (i == 0) {
 				// First.
 				atrousFilter<true, false> << <grid, block >> > (
+					isResHi,
 					outputSurf,
 					m_tmpBuf.ptr(),
 					m_aovNormalDepth[resType][curaov].ptr(),
@@ -405,6 +418,7 @@ namespace idaten
 			else if (i == ITER - 1) {
 				// Final.
 				atrousFilter<false, true> << <grid, block >> > (
+					isResHi,
 					outputSurf,
 					m_tmpBuf.ptr(),
 					m_aovNormalDepth[resType][curaov].ptr(),
@@ -419,6 +433,7 @@ namespace idaten
 			}
 			else {
 				atrousFilter<false, false> << <grid, block >> > (
+					isResHi,
 					outputSurf,
 					m_tmpBuf.ptr(),
 					m_aovNormalDepth[resType][curaov].ptr(),
@@ -435,6 +450,11 @@ namespace idaten
 
 			cur = next;
 			next = 1 - cur;
+		}
+
+		if (resType == Resolution::Low) {
+			m_aovLowResColor.unbind();
+			m_aovLowResColor.unmap();
 		}
 
 		// Copy color from temporary buffer to AOV buffer for next temporal reprojection.

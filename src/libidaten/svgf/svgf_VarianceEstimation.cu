@@ -249,11 +249,13 @@ __global__ void varianceEstimation(
 
 	aovColorVariance[idx].w = var;
 
+#if 0
 	surf2Dwrite(
 		make_float4(var, var, var, var),
 		dst,
 		ix * sizeof(float4), iy,
 		cudaBoundaryModeTrap);
+#endif
 }
 
 namespace idaten

@@ -99,6 +99,10 @@ namespace idaten
 
 		void setGBuffer(GLuint gltexGbuffer);
 
+		void setLowResExportBuffer(
+			GLuint gltexColor,
+			GLuint gltexNmlDepth);
+
 		Mode getMode() const
 		{
 			return m_mode;
@@ -325,6 +329,10 @@ namespace idaten
 
 		// AOV buffer to use in OpenGL.
 		idaten::CudaGLSurface m_aovGLBuffer;
+
+		// AOV buffer to use in OpenGL.
+		idaten::CudaGLSurface m_aovLowResColor;
+		idaten::CudaGLSurface m_aovLowResNmlDepth;
 
 		// G-Buffer rendered by OpenGL.
 		idaten::CudaGLSurface m_gbuffer;

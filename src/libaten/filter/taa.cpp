@@ -68,6 +68,24 @@ namespace aten
 		}
 	}
 
+	bool TAA::initForRenderingStandalone(int width, int height)
+	{
+		m_colorForStandalone.initAsGLTexture(width, height);
+		return getFbo().init(width, height, aten::PixelFormat::rgba32f);
+	}
+
+	void TAA::renderStandalone()
+	{
+		getFbo().bindFBO();
+
+		auto gltex = m_colorForStandalone.getGLTexHandle();
+		CALL_GL_API(glBindTexture(GL_TEXTURE_2D, gltex));
+
+		prepareRender(nullptr, false);
+
+		CALL_GL_API(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+	}
+
 	void TAA::prepareFbo(const uint32_t* tex, int num, std::vector<uint32_t>& comps)
 	{
 		if (comps.empty()) {
@@ -103,8 +121,8 @@ namespace aten
 	{
 		shader::prepareRender(pixels, revert);
 
-		GLuint srcTexHandle = visualizer::getTexHandle();
-		texture::bindAsGLTexture(srcTexHandle, 0, this);
+		// Stage 0 texture is binded out of this function.
+		texture::bindAsGLTexture(0, 0, this);
 
 		int cur = m_body->m_idx;
 

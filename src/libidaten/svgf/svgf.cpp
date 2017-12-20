@@ -78,6 +78,14 @@ namespace idaten
 		m_gbuffer.init(gltexGbuffer, idaten::CudaGLRscRegisterType::ReadOnly);
 	}
 
+	void SVGFPathTracing::setLowResExportBuffer(
+		GLuint gltexColor,
+		GLuint gltexNmlDepth)
+	{
+		m_aovLowResColor.init(gltexColor, CudaGLRscRegisterType::WriteOnly);
+		m_aovLowResNmlDepth.init(gltexNmlDepth, CudaGLRscRegisterType::WriteOnly);
+	}
+
 	static bool doneSetStackSize = false;
 
 	void SVGFPathTracing::render(
@@ -333,7 +341,7 @@ namespace idaten
 				outputSurf, width / 2, height / 2);
 
 			if (m_mode == Mode::SVGF) {
-				upsamplingAndMerge(outputSurf, width, height);
+				//upsamplingAndMerge(outputSurf, width, height);
 			}
 		}
 		else if (m_mode == Mode::VAR) {

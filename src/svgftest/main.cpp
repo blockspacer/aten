@@ -35,6 +35,9 @@ static aten::AcceleratedScene<aten::GPUBvh> g_scene;
 static idaten::SVGFPathTracing g_tracer;
 
 static aten::TAA g_taa;
+static aten::TAA g_taaLowRes;
+
+static aten::BilateralUpsampling g_upsampling;
 
 static aten::FBO g_fbo;
 
@@ -84,6 +87,9 @@ void onRun()
 	g_taa.update(
 		g_tracer.frame(),
 		g_camera);
+	g_taaLowRes.update(
+		g_tracer.frame(),
+		g_camera);
 
 	aten::timer timer;
 	timer.begin();
@@ -94,6 +100,8 @@ void onRun()
 		g_maxBounce);
 
 	auto cudaelapsed = timer.end();
+
+	g_taaLowRes.renderStandalone();
 
 	aten::visualizer::render(false);
 
@@ -374,7 +382,22 @@ int main()
 		"../shader/fullscreen_vs.glsl", "../shader/taa_fs.glsl",
 		"../shader/fullscreen_vs.glsl", "../shader/taa_final_fs.glsl");
 
+	g_taaLowRes.init(
+		WIDTH / 2, HEIGHT / 2,
+		"../shader/fullscreen_vs.glsl", "../shader/taa_fs.glsl",
+		"../shader/fullscreen_vs.glsl", "../shader/taa_final_fs.glsl");
+	g_taaLowRes.initForRenderingStandalone(WIDTH / 2, HEIGHT / 2);
+
+	g_upsampling.init(
+		WIDTH, HEIGHT,
+		"../shader/fullscreen_vs.glsl",
+		"../shader/bilateral_upsampling_fs.glsl");
+	g_upsampling.setHiResNmlDepthTextureHandle(g_taa.getAovGLTexHandle());
+	g_upsampling.setLowResColorTextureHandle(g_taaLowRes.getFbo().getTexHandle());
+	g_upsampling.setLowResNmlDepthTextureHandle(g_taaLowRes.getAovGLTexHandle());
+
 	aten::visualizer::addPostProc(&g_taa);
+	aten::visualizer::addPostProc(&g_upsampling);
 	aten::visualizer::addPostProc(&gamma);
 	//aten::visualizer::addPostProc(&blitter);
 
@@ -431,6 +454,10 @@ int main()
 		g_tracer.setHitDistanceLimit(d * 0.25f);
 
 		g_tracer.setAovExportBuffer(g_taa.getAovGLTexHandle());
+
+		g_tracer.setLowResExportBuffer(
+			g_taaLowRes.getColorTextureGLHandleForStandalone(),
+			g_taaLowRes.getAovGLTexHandle());
 
 		std::vector<aten::GeomParameter> shapeparams;
 		std::vector<aten::PrimitiveParamter> primparams;
