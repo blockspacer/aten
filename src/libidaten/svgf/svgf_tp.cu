@@ -344,6 +344,7 @@ inline __device__ float3 medianFilter(
 
 	int pos = 0;
 
+#pragma unroll
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			int xx = clamp(ix + x, 0, width - 1);
@@ -505,8 +506,8 @@ namespace idaten
 		m_mtxs.init(sizeof(aten::mat4) * AT_COUNTOF(mtxs));
 		m_mtxs.writeByNum(mtxs, AT_COUNTOF(mtxs));
 
-		//bool enableMedianFilter = (resType == Resolution::Low);
-		bool enableMedianFilter = false;
+		bool enableMedianFilter = (resType == Resolution::Low);
+		//bool enableMedianFilter = false;
 
 		temporalReprojection << <grid, block >> > (
 		//temporalReprojection << <1, 1 >> > (
