@@ -44,8 +44,8 @@ void main()
 	// |0,0|1,0|        | 0 | 1 |
 	// +---+---+ +x     +---+---+
 
-	//int idx = (1 - (pos.y & 0x01)) * 2 + (1 - (pos.x & 0x01));
-	int idx = (pos.y & 0x01) * 2 + (pos.x & 0x01);
+	int idx = (1 - (pos.y & 0x01)) * 2 + (1 - (pos.x & 0x01));
+	//int idx = (pos.y & 0x01) * 2 + (pos.x & 0x01);
 
 	vec4 lowResNmlDepth[4];
 	vec4 lowResClr[4];
