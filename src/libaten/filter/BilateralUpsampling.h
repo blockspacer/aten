@@ -20,19 +20,25 @@ namespace aten {
 			const void* pixels,
 			bool revert) override final;
 
-		void setHiResNmlDepthTextureHandle(uint32_t handle)
+		void setLowResColorTextureHandle(uint32_t handle)
 		{
-			m_hiResNmlDepth = handle;
+			m_lowResColor = handle;
 		}
 
-		uint32_t getLowResNmlDepthTextureHandle()
+		void setLowResNmlDepthTextureHandle(uint32_t handle)
 		{
-			return m_lowResNmlDepth.getGLTexHandle();
+			m_lowResNmlDepth = handle;
+		}
+
+		uint32_t getHiResNmlDepthTextureHandle()
+		{
+			return m_hiResNmlDepth.getGLTexHandle();
 		}
 
 	private:
-		texture m_lowResNmlDepth;
-		uint32_t m_hiResNmlDepth{ 0 };
+		uint32_t m_lowResColor{ 0 };
+		uint32_t m_lowResNmlDepth{ 0 };
+		texture m_hiResNmlDepth;
 	};
 
 }

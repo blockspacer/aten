@@ -3,8 +3,6 @@
 #include "math/mat4.h"
 #include "texture/texture.h"
 
-#pragma optimize( "", off)
-
 namespace aten
 {
 	bool TAA::init(
@@ -66,6 +64,24 @@ namespace aten
 		if (frame == 1) {
 			m_mtxPrevW2V = m_mtxW2V;
 		}
+	}
+
+	bool TAA::initForRenderingStandalone(int width, int height)
+	{
+		m_colorForStandalone.initAsGLTexture(width, height);
+		return getFbo().init(width, height, aten::PixelFormat::rgba32f);
+	}
+
+	void TAA::renderStandalone()
+	{
+		getFbo().bindFBO();
+
+		auto gltex = m_colorForStandalone.getGLTexHandle();
+		CALL_GL_API(glBindTexture(GL_TEXTURE_2D, gltex));
+
+		prepareRender(nullptr, false);
+
+		CALL_GL_API(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 	}
 
 	void TAA::prepareFbo(const uint32_t* tex, int num, std::vector<uint32_t>& comps)

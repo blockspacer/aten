@@ -382,6 +382,10 @@ namespace idaten
 		int cur = 0;
 		int next = 1;
 
+		// TODO
+		m_lowResColor.map();
+		outputSurf = m_lowResColor.bind();
+
 		for (int i = 0; i < ITER; i++) {
 			int stepScale = 1 << i;
 
@@ -435,6 +439,9 @@ namespace idaten
 			cur = next;
 			next = 1 - cur;
 		}
+
+		m_lowResColor.unbind();
+		m_lowResColor.unmap();
 	}
 
 	void SVGFPathTracing::copyFromTmpBufferToAov(int width, int height)

@@ -12,7 +12,7 @@ namespace aten
 	{
 		shader::init(width, height, pathVS, pathFS);
 
-		m_lowResNmlDepth.initAsGLTexture(width, height);
+		m_hiResNmlDepth.initAsGLTexture(width, height);
 
 		// TODO
 		return true;
@@ -24,11 +24,10 @@ namespace aten
 	{
 		Blitter::prepareRender(pixels, revert);
 
-		// Stage 0 texture is binded out of this function.
-		texture::bindAsGLTexture(0, 0, this);	// color low-resolution
-
-		texture::bindAsGLTexture(m_hiResNmlDepth, 1, this);
-		m_lowResNmlDepth.bindAsGLTexture(2, this);
+		texture::bindAsGLTexture(m_lowResColor, 0, this);		// color low-resolution.
+		m_hiResNmlDepth.bindAsGLTexture(1, this);				// nml/depth hi-resolution.
+		texture::bindAsGLTexture(m_lowResNmlDepth, 2, this);	// nml/depth low-resolution.
+		
 
 		auto hTexel = getHandle("invScreen");
 		if (hTexel >= 0) {

@@ -94,6 +94,8 @@ namespace idaten
 			const std::vector<TextureResource>& texs,
 			const EnvmapResource& envmapRsc) override;
 
+		void setLowResColorExportBuffer(GLuint gltex);
+
 		void setAovNmlDepthExportBuffer(
 			GLuint gltexIdHiRes,
 			GLuint gltexIdLowRes);
@@ -301,6 +303,9 @@ namespace idaten
 
 		// Distance limitation to kill path.
 		float m_hitDistLimit{ AT_MATH_INF };
+
+		// Low resolution color buffer to use in OpenGL.
+		idaten::CudaGLSurface m_lowResColor;
 
 		// AOV buffer to use in OpenGL.
 		idaten::CudaGLSurface m_aovHiResNmlDepth;

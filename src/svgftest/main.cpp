@@ -37,7 +37,7 @@ static aten::AcceleratedScene<aten::GPUBvh> g_scene;
 
 static idaten::SVGFPathTracing g_tracer;
 
-static aten::TAA g_taa;
+static aten::TAA g_taaLowRes;
 
 static aten::FBO g_fbo;
 
@@ -84,7 +84,7 @@ void onRun()
 		&g_camera,
 		&g_fbo);
 
-	g_taa.update(
+	g_taaLowRes.update(
 		g_tracer.frame(),
 		g_camera);
 
@@ -97,6 +97,8 @@ void onRun()
 		g_maxBounce);
 
 	auto cudaelapsed = timer.end();
+
+	g_taaLowRes.renderStandalone();
 
 	aten::visualizer::render(false);
 
@@ -167,19 +169,19 @@ void onRun()
 			}
 		}
 
-		bool prevEnableTAA = g_taa.isEnableTAA();
+		bool prevEnableTAA = g_taaLowRes.isEnableTAA();
 		bool enableTAA = prevEnableTAA;
 		ImGui::Checkbox("Enable TAA", &enableTAA);
 
-		bool prevCanShowTAADiff = g_taa.canShowTAADiff();
+		bool prevCanShowTAADiff = g_taaLowRes.canShowTAADiff();
 		bool canShowTAADiff = prevCanShowTAADiff;
 		ImGui::Checkbox("Show TAA Diff", &canShowTAADiff);
 
 		if (prevEnableTAA != enableTAA) {
-			g_taa.enableTAA(enableTAA);
+			g_taaLowRes.enableTAA(enableTAA);
 		}
 		if (prevCanShowTAADiff != canShowTAADiff) {
-			g_taa.showTAADiff(canShowTAADiff);
+			g_taaLowRes.showTAADiff(canShowTAADiff);
 		}
 
 		auto cam = g_camera.param();
@@ -365,20 +367,21 @@ int main()
 		"../shader/fullscreen_fs.glsl");
 	blitter.setIsRenderRGB(true);
 
-	g_taa.init(
-		WIDTH, HEIGHT,
+	g_taaLowRes.init(
+		WIDTH_LOW, HEIGHT_LOW,
 		"../shader/fullscreen_vs.glsl", "../shader/taa_fs.glsl",
 		"../shader/fullscreen_vs.glsl", "../shader/taa_final_fs.glsl");
+	g_taaLowRes.initForRenderingStandalone(WIDTH_LOW, HEIGHT_LOW);
 
 	aten::BilateralUpsampling bilateral;
 	bilateral.init(
-		WIDTH_LOW, HEIGHT_LOW,
+		WIDTH, HEIGHT,
 		"../shader/fullscreen_vs.glsl",
 		"../shader/bilateral_upsampling_fs.glsl");
-	bilateral.setHiResNmlDepthTextureHandle(g_taa.getAovGLTexHandle());
+	bilateral.setLowResColorTextureHandle(g_taaLowRes.getFbo().getTexHandle());
+	bilateral.setLowResNmlDepthTextureHandle(g_taaLowRes.getAovGLTexHandle());
 
-	aten::visualizer::addPostProc(&g_taa);
-	//aten::visualizer::addPostProc(&bilateral);
+	aten::visualizer::addPostProc(&bilateral);
 	aten::visualizer::addPostProc(&gamma);
 	//aten::visualizer::addPostProc(&blitter);
 
@@ -436,9 +439,11 @@ int main()
 		auto d = aabb.getDiagonalLenght();
 		g_tracer.setHitDistanceLimit(d * 0.25f);
 
+		g_tracer.setLowResColorExportBuffer(
+			g_taaLowRes.getColorTextureGLHandleForStandalone());
 		g_tracer.setAovNmlDepthExportBuffer(
-			g_taa.getAovGLTexHandle(),
-			bilateral.getLowResNmlDepthTextureHandle());
+			bilateral.getHiResNmlDepthTextureHandle(),
+			g_taaLowRes.getAovGLTexHandle());
 
 		std::vector<aten::GeomParameter> shapeparams;
 		std::vector<aten::PrimitiveParamter> primparams;

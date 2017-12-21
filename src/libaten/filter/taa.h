@@ -21,6 +21,14 @@ namespace aten {
 			uint32_t frame,
 			const PinholeCamera& cam);
 
+		bool initForRenderingStandalone(int width, int height);
+		void renderStandalone();
+
+		uint32_t getColorTextureGLHandleForStandalone()
+		{
+			return m_colorForStandalone.getGLTexHandle();
+		}
+
 		virtual PixelFormat inFormat() const override final
 		{
 			return PixelFormat::rgba32f;
@@ -109,6 +117,8 @@ namespace aten {
 	private:
 		TAAPass m_taa;
 		FinalPass m_final;
+
+		texture m_colorForStandalone;
 
 		texture m_aovTex;
 

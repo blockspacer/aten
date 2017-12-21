@@ -60,6 +60,11 @@ namespace idaten
 		m_tmpBuf.init(width * height);
 	}
 
+	void SVGFPathTracing::setLowResColorExportBuffer(GLuint gltex)
+	{
+		m_lowResColor.init(gltex, CudaGLRscRegisterType::WriteOnly);
+	}
+
 	void SVGFPathTracing::setAovNmlDepthExportBuffer(
 		GLuint gltexIdHiRes,
 		GLuint gltexIdLowRes)
