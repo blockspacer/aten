@@ -413,6 +413,9 @@
     <ClInclude Include="..\src\libaten\accelerator\sbvh.h">
       <Filter>accelerator</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\libaten\filter\BilateralUpsampling.h">
+      <Filter>filter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\libaten\misc\timer.cpp">
@@ -649,6 +652,9 @@
     <ClCompile Include="..\src\libaten\accelerator\sbvh.cpp">
       <Filter>accelerator</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\libaten\filter\BilateralUpsampling.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\shader\tonemap_fs.glsl">
@@ -715,6 +721,9 @@
       <Filter>shader</Filter>
     </None>
     <None Include="..\src\shader\fullscreen_fs.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\src\shader\bilateral_upsampling_fs.glsl">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

@@ -12,6 +12,7 @@
 #include "filter/bilateral.h"
 #include "filter/atrous.h"
 #include "filter/taa.h"
+#include "filter/BilateralUpsampling.h"
 
 #include "filter/PracticalNoiseReduction/PracticalNoiseReduction.h"
 #include "filter/VirtualFlashImage/VirtualFlashImage.h"

@@ -17,9 +17,12 @@
 #define ENABLE_ENVMAP
 //#define ENABLE_NLM
 
-static int WIDTH = 640;
-static int HEIGHT = 360;
+static int WIDTH = 1280;
+static int HEIGHT = 720;
 static const char* TITLE = "svgf";
+
+static int WIDTH_LOW = WIDTH / 2;
+static int HEIGHT_LOW = HEIGHT / 2;
 
 #ifdef ENABLE_OMP
 static uint32_t g_threadnum = 8;
@@ -362,19 +365,20 @@ int main()
 		"../shader/fullscreen_fs.glsl");
 	blitter.setIsRenderRGB(true);
 
-	aten::NonLocalMeanFilterShader nlmshd;
-	nlmshd.init(
-		WIDTH, HEIGHT,
-		"../shader/fullscreen_vs.glsl",
-		"../shader/nlm_fs.glsl");
-	nlmshd.setParam(0.04f, 0.04f);
-
 	g_taa.init(
 		WIDTH, HEIGHT,
 		"../shader/fullscreen_vs.glsl", "../shader/taa_fs.glsl",
 		"../shader/fullscreen_vs.glsl", "../shader/taa_final_fs.glsl");
 
+	aten::BilateralUpsampling bilateral;
+	bilateral.init(
+		WIDTH_LOW, HEIGHT_LOW,
+		"../shader/fullscreen_vs.glsl",
+		"../shader/bilateral_upsampling_fs.glsl");
+	bilateral.setHiResNmlDepthTextureHandle(g_taa.getAovGLTexHandle());
+
 	aten::visualizer::addPostProc(&g_taa);
+	//aten::visualizer::addPostProc(&bilateral);
 	aten::visualizer::addPostProc(&gamma);
 	//aten::visualizer::addPostProc(&blitter);
 
@@ -409,6 +413,8 @@ int main()
 		WIDTH, HEIGHT);
 #endif
 
+	aten::texture::getTextures().clear();
+
 	Scene::makeScene(&g_scene);
 	g_scene.build();
 
@@ -430,7 +436,9 @@ int main()
 		auto d = aabb.getDiagonalLenght();
 		g_tracer.setHitDistanceLimit(d * 0.25f);
 
-		g_tracer.setAovExportBuffer(g_taa.getAovGLTexHandle());
+		g_tracer.setAovNmlDepthExportBuffer(
+			g_taa.getAovGLTexHandle(),
+			bilateral.getLowResNmlDepthTextureHandle());
 
 		std::vector<aten::GeomParameter> shapeparams;
 		std::vector<aten::PrimitiveParamter> primparams;

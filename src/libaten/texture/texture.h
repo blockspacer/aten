@@ -85,7 +85,7 @@ namespace aten {
 		}
 
 		static const texture* getTexture(int id);
-		static const std::vector<texture*>& getTextures();
+		static std::vector<texture*>& getTextures();
 
 		bool initAsGLTexture();
 		bool initAsGLTexture(int width, int height);

@@ -94,7 +94,9 @@ namespace idaten
 			const std::vector<TextureResource>& texs,
 			const EnvmapResource& envmapRsc) override;
 
-		void setAovExportBuffer(GLuint gltexId);
+		void setAovNmlDepthExportBuffer(
+			GLuint gltexIdHiRes,
+			GLuint gltexIdLowRes);
 
 		void setGBuffer(GLuint gltexGbuffer);
 
@@ -226,6 +228,8 @@ namespace idaten
 
 		void copyFromTmpBufferToAov(int width, int height);
 
+		void onCoarseBuffer(int width, int height);
+
 		void onFillAOV(
 			cudaSurfaceObject_t outputSurf,
 			int width, int height);
@@ -271,6 +275,10 @@ namespace idaten
 		idaten::TypedCudaMemory<float4> m_aovColorVariance[2];
 		idaten::TypedCudaMemory<float4> m_aovMomentMeshid[2];
 
+		idaten::TypedCudaMemory<Path> m_tmpPaths;
+		idaten::TypedCudaMemory<aten::ray> m_tmpRays;
+		idaten::TypedCudaMemory<float4> m_tmpAovBuffer[3];
+
 		aten::mat4 m_mtxW2V;		// World - View.
 		aten::mat4 m_mtxV2C;		// View - Clip.
 		aten::mat4 m_mtxC2V;		// Clip - View.
@@ -295,7 +303,8 @@ namespace idaten
 		float m_hitDistLimit{ AT_MATH_INF };
 
 		// AOV buffer to use in OpenGL.
-		idaten::CudaGLSurface m_aovGLBuffer;
+		idaten::CudaGLSurface m_aovHiResNmlDepth;
+		idaten::CudaGLSurface m_aovLowResNmlDepth;
 
 		// G-Buffer rendered by OpenGL.
 		idaten::CudaGLSurface m_gbuffer;

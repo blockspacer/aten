@@ -60,15 +60,19 @@ namespace idaten
 		m_tmpBuf.init(width * height);
 	}
 
-	void SVGFPathTracing::setAovExportBuffer(GLuint gltexId)
+	void SVGFPathTracing::setAovNmlDepthExportBuffer(
+		GLuint gltexIdHiRes,
+		GLuint gltexIdLowRes)
 	{
-		m_aovGLBuffer.init(gltexId, CudaGLRscRegisterType::WriteOnly);
+		m_aovHiResNmlDepth.init(gltexIdHiRes, CudaGLRscRegisterType::WriteOnly);
+		m_aovLowResNmlDepth.init(gltexIdLowRes, CudaGLRscRegisterType::WriteOnly);
 	}
 
 	void SVGFPathTracing::setGBuffer(GLuint gltexGbuffer)
 	{
 		m_gbuffer.init(gltexGbuffer, idaten::CudaGLRscRegisterType::ReadOnly);
 	}
+#pragma optimize( "", off)
 
 	static bool doneSetStackSize = false;
 
@@ -122,15 +126,18 @@ namespace idaten
 		}
 
 		cudaSurfaceObject_t aovExportBuffer = 0;
-		if (m_aovGLBuffer.isValid()) {
-			m_aovGLBuffer.map();
-			aovExportBuffer = m_aovGLBuffer.bind();
+		if (m_aovHiResNmlDepth.isValid()) {
+			m_aovHiResNmlDepth.map();
+			aovExportBuffer = m_aovHiResNmlDepth.bind();
 		}
 
 		static const int rrBounce = 3;
 
 		// Set bounce count to 1 forcibly, aov render mode.
 		maxBounce = (m_mode == Mode::AOVar ? 1 : maxBounce);
+
+		int orgWidth = width;
+		int orgHeight = height;
 
 		auto time = AT_NAME::timer::getSystemTime();
 
@@ -164,6 +171,12 @@ namespace idaten
 				//AT_PRINTF("%d\n", hitcount);
 
 				if (hitcount == 0) {
+					if (bounce == 0) {
+						onCoarseBuffer(width, height);
+
+						width = orgWidth / 2;
+						height = orgHeight / 2;
+					}
 					break;
 				}
 
@@ -174,6 +187,16 @@ namespace idaten
 					width, height,
 					bounce, rrBounce,
 					vtxTexPos, vtxTexNml);
+
+				if (bounce == 0) {
+					onCoarseBuffer(width, height);
+
+					// For next loop.
+					width = orgWidth / 2;
+					height = orgHeight / 2;
+
+					cudaMemset(m_hitbools.ptr(), 0, m_hitbools.bytes());
+				}
 
 				bounce++;
 			}
@@ -222,9 +245,9 @@ namespace idaten
 			m_tex.reset();
 		}
 
-		if (m_aovGLBuffer.isValid()) {
-			m_aovGLBuffer.unbind();
-			m_aovGLBuffer.unmap();
+		if (m_aovHiResNmlDepth.isValid()) {
+			m_aovHiResNmlDepth.unbind();
+			m_aovHiResNmlDepth.unmap();
 		}
 	}
 }

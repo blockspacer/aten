@@ -292,7 +292,7 @@ __global__ void shadeMiss(
 
 			// Export bg color to albedo buffer.
 			aovTexclrTemporalWeight[idx] = make_float4(bg.x, bg.y, bg.z, aovTexclrTemporalWeight[idx].w);
-			aovNormalDepth[idx].w = -1;
+			aovNormalDepth[idx] = make_float4(0, 0, 1, 0);
 			aovMomentMeshid[idx].w = -1;
 
 			// For exporting separated albedo.
@@ -352,7 +352,7 @@ __global__ void shadeMissWithEnvmap(
 
 			// Export envmap to albedo buffer.
 			aovTexclrTemporalWeight[idx] = make_float4(emit.x, emit.y, emit.z, aovTexclrTemporalWeight[idx].w);
-			aovNormalDepth[idx].w = -1;
+			aovNormalDepth[idx] = make_float4(0, 0, 1, 0);
 			aovMomentMeshid[idx].w = -1;
 
 			// For exporting separated albedo.

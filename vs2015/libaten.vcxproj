@@ -257,6 +257,7 @@
     <ClInclude Include="..\src\libaten\defs.h" />
     <ClInclude Include="..\src\libaten\filter\atrous.h" />
     <ClInclude Include="..\src\libaten\filter\bilateral.h" />
+    <ClInclude Include="..\src\libaten\filter\BilateralUpsampling.h" />
     <ClInclude Include="..\src\libaten\filter\GeometryRendering\GeometryRendering.h" />
     <ClInclude Include="..\src\libaten\filter\nlm.h" />
     <ClInclude Include="..\src\libaten\filter\PracticalNoiseReduction\PracticalNoiseReduction.h" />
@@ -365,6 +366,7 @@
     <ClCompile Include="..\src\libaten\camera\thinlens.cpp" />
     <ClCompile Include="..\src\libaten\filter\atrous.cpp" />
     <ClCompile Include="..\src\libaten\filter\bilateral.cpp" />
+    <ClCompile Include="..\src\libaten\filter\BilateralUpsampling.cpp" />
     <ClCompile Include="..\src\libaten\filter\GeometryRendering\GeometryRendering.cpp" />
     <ClCompile Include="..\src\libaten\filter\nlm.cpp" />
     <ClCompile Include="..\src\libaten\filter\PracticalNoiseReduction\PracticalNoiseReduction.cpp" />
@@ -433,6 +435,7 @@
     <None Include="..\src\shader\atrous_final_fs.glsl" />
     <None Include="..\src\shader\atrous_fs.glsl" />
     <None Include="..\src\shader\bilateral_fs.glsl" />
+    <None Include="..\src\shader\bilateral_upsampling_fs.glsl" />
     <None Include="..\src\shader\bloomeffect_fs_2x2.glsl" />
     <None Include="..\src\shader\bloomeffect_fs_4x4.glsl" />
     <None Include="..\src\shader\bloomeffect_fs_Final.glsl" />

@@ -400,5 +400,8 @@
     <CudaCompile Include="..\src\libaten\geometry\sphere.cpp">
       <Filter>aten\geometry</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\src\libidaten\svgf\svgf_upsampling.cu">
+      <Filter>svgf</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

@@ -103,8 +103,8 @@ namespace aten
 	{
 		shader::prepareRender(pixels, revert);
 
-		GLuint srcTexHandle = visualizer::getTexHandle();
-		texture::bindAsGLTexture(srcTexHandle, 0, this);
+		// Stage 0 texture is binded out of this function.
+		texture::bindAsGLTexture(0, 0, this);
 
 		int cur = m_body->m_idx;
 
