@@ -14,3 +14,9 @@ imgui.ini
 
 */.vs
 */x64
+
+*.ninja
+*.a
+*.so
+.ninja_deps
+.ninja_log

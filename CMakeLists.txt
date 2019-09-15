@@ -27,8 +27,8 @@ if (NOT CUDA_TARGET_COMPUTE_CAPABILITY)
     bash -c "echo -n ${CUDA_TARGET_COMPUTE_CAPABILITY} | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n"
     OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY)
 
-  message("CUDA device-side code will assume compute capability " 
-    ${FORMATTED_COMPUTE_CAPABILITY})
+  message("CUDA device-side code will assume compute capability "  ${FORMATTED_COMPUTE_CAPABILITY})
+  message("CUDA compute cpability for CMake : " ${CUDA_TARGET_COMPUTE_CAPABILITY})
 endif()
 
 add_subdirectory(3rdparty)

@@ -2,6 +2,8 @@
 
 build_type=${1:-Release}
 
+# Need to specify like "60" or "75"
+# Not to specify like "6.0" or "7.5"
 compute_capability=${2}
 
 echo "Build Type is [${build_type}]"
